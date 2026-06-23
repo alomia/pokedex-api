@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pokédex API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0D1117;
+      --surface:   #161B22;
+      --border:    #21262D;
+      --text:      #E6EDF3;
+      --muted:     #8B949E;
+      --red:       #F85149;
+      --blue:      #58A6FF;
+      --green:     #3FB950;
+      --amber:     #D29922;
+      --mono:      'JetBrains Mono', monospace;
+      --sans:      'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      padding: 80px 0 72px;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pokeball {
+      position: absolute;
+      right: -60px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 340px;
+      height: 340px;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--red);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .hero-title {
+      font-family: var(--mono);
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 500;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+
+    .hero-title span {
+      color: var(--red);
+    }
+
+    .hero-desc {
+      font-size: 16px;
+      color: var(--muted);
+      max-width: 500px;
+      margin-bottom: 36px;
+      line-height: 1.7;
+    }
+
+    .hero-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-family: var(--mono);
+      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Sections ── */
+    section {
+      padding: 56px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    /* ── Endpoints ── */
+    .endpoint-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .endpoint {
+      display: grid;
+      grid-template-columns: 72px 1fr;
+      align-items: start;
+      gap: 16px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .endpoint:hover {
+      border-color: var(--border);
+      background: var(--surface);
+    }
+
+    .method {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    .method-get    { background: #1C3A5E; color: var(--blue); }
+    .method-post   { background: #1A3A22; color: var(--green); }
+    .method-patch  { background: #3A2E0D; color: var(--amber); }
+    .method-delete { background: #3A1414; color: var(--red); }
+
+    .endpoint-info { min-width: 0; }
+
+    .endpoint-route {
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .endpoint-desc {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .endpoint-group-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      padding: 8px 16px 4px;
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Params ── */
+    .param-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .param-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .param-table th:first-child { padding-left: 0; }
+
+    .param-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .param-table td:first-child { padding-left: 0; }
+    .param-table tr:last-child td { border-bottom: none; }
+
+    .param-name {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .param-type {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--blue);
+    }
+
+    .param-default {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .code-title {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .code-body {
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.7;
+      color: var(--text);
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .code-comment { color: #484F58; }
+    .code-key     { color: var(--blue); }
+    .code-val     { color: var(--green); }
+    .code-str     { color: #A5D6FF; }
+    .code-cmd     { color: var(--amber); }
+
+    /* ── Env vars ── */
+    .env-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .env-table th {
+      text-align: left;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 0 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .env-table td {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .env-table td:not(:last-child) { padding-right: 24px; }
+    .env-table tr:last-child td { border-bottom: none; }
+
+    .required-pill {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: #3A1414;
+      color: var(--red);
+    }
+
+    .optional-pill {
+      font-family: var(--mono);
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      padding: 32px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-mono {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 600px) {
+      .hero { padding: 56px 0 48px; }
+      .pokeball { right: -80px; width: 260px; height: 260px; }
+      .endpoint { grid-template-columns: 64px 1fr; gap: 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="container" style="position: relative; z-index: 1;">
+      <p class="hero-eyebrow">REST API · v0.0.1</p>
+      <h1 class="hero-title">Pokédex<span>.</span>API</h1>
+      <p class="hero-desc">
+        A NestJS REST API for Pokémon data. Full CRUD with pagination,
+        flexible lookup by ID, number, or name, and a seed endpoint
+        that populates the database directly from PokéAPI.
+      </p>
+      <div class="hero-badges">
+        <span class="badge"><span class="badge-dot" style="background:#3FB950"></span>NestJS 11</span>
+        <span class="badge"><span class="badge-dot" style="background:#58A6FF"></span>MongoDB 7</span>
+        <span class="badge"><span class="badge-dot" style="background:#D29922"></span>Mongoose 9</span>
+        <span class="badge"><span class="badge-dot" style="background:#A371F7"></span>TypeScript 5</span>
+      </div>
+    </div>
+
+    <!-- Pokéball signature element -->
+    <svg class="pokeball" viewBox="0 0 340 340" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="170" cy="170" r="168" stroke="white" stroke-width="4"/>
+      <rect x="0" y="158" width="340" height="24" fill="white"/>
+      <circle cx="170" cy="170" r="36" stroke="white" stroke-width="4"/>
+      <circle cx="170" cy="170" r="20" fill="white"/>
+    </svg>
+  </div>
+
+  <!-- Endpoints -->
+  <section>
+    <div class="container">
+      <p class="section-label">Endpoints</p>
+
+      <div class="endpoint-list">
+        <p class="endpoint-group-title">Pokémon</p>
+
+        <div class="endpoint">
+          <span class="method method-post">POST</span>
+          <div class="endpoint-info">
+            <p class="endpoint-route">/api/v1/pokemon</p>
+            <p class="endpoint-desc">Create a new Pokémon</p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div class="endpoint-info">
+            <p class="endpoint-route">/api/v1/pokemon</p>
+            <p class="endpoint-desc">List all Pokémon — supports <code style="font-family:var(--mono);font-size:12px;color:var(--muted)">limit</code> and <code style="font-family:var(--mono);font-size:12px;color:var(--muted)">offset</code> query params</p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div class="endpoint-info">
+            <p class="endpoint-route">/api/v1/pokemon/:term</p>
+            <p class="endpoint-desc">Find by Mongo ID, Pokémon number, or name</p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <span class="method method-patch">PATCH</span>
+          <div class="endpoint-info">
+            <p class="endpoint-route">/api/v1/pokemon/:term</p>
+            <p class="endpoint-desc">Update by Mongo ID, Pokémon number, or name</p>
+          </div>
+        </div>
+
+        <div class="endpoint">
+          <span class="method method-delete">DELETE</span>
+          <div class="endpoint-info">
+            <p class="endpoint-route">/api/v1/pokemon/:id</p>
+            <p class="endpoint-desc">Delete by Mongo ID</p>
+          </div>
+        </div>
+
+        <p class="endpoint-group-title" style="margin-top:12px">Seed</p>
+
+        <div class="endpoint">
+          <span class="method method-post">POST</span>
+          <div class="endpoint-info">
+            <p class="endpoint-route">/api/v1/seed</p>
+            <p class="endpoint-desc">Populate the database with 650 Pokémon from PokéAPI</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query params -->
+      <div style="margin-top: 32px;">
+        <p style="font-size:13px; color:var(--muted); margin-bottom:14px;">
+          Query parameters — <code style="font-family:var(--mono);font-size:12px">GET /api/v1/pokemon</code>
+        </p>
+        <table class="param-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Type</th>
+              <th>Default</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="param-name">limit</span></td>
+              <td><span class="param-type">number</span></td>
+              <td><span class="param-default">10</span></td>
+              <td style="color:var(--muted)">Number of results per page</td>
+            </tr>
+            <tr>
+              <td><span class="param-name">offset</span></td>
+              <td><span class="param-type">number</span></td>
+              <td><span class="param-default">0</span></td>
+              <td style="color:var(--muted)">Number of results to skip</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section>
+    <div class="container">
+      <p class="section-label">Quick start</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">1. Start the database</span>
+        </div>
+        <div class="code-body"><span class="code-cmd">docker</span> compose up -d</div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">2. Start the server</span>
+        </div>
+        <div class="code-body"><span class="code-cmd">pnpm</span> start:dev</div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">3. Seed the database</span>
+        </div>
+        <div class="code-body"><span class="code-cmd">curl</span> -X POST http://localhost:3000/api/v1/seed</div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">Response — GET /api/v1/pokemon?limit=2</span>
+        </div>
+        <div class="code-body">{
+  <span class="code-key">"total"</span>: <span class="code-val">650</span>,
+  <span class="code-key">"limit"</span>: <span class="code-val">2</span>,
+  <span class="code-key">"offset"</span>: <span class="code-val">0</span>,
+  <span class="code-key">"data"</span>: [
+    { <span class="code-key">"name"</span>: <span class="code-str">"bulbasaur"</span>, <span class="code-key">"no"</span>: <span class="code-val">1</span> },
+    { <span class="code-key">"name"</span>: <span class="code-str">"ivysaur"</span>,   <span class="code-key">"no"</span>: <span class="code-val">2</span> }
+  ]
+}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Environment Variables -->
+  <section>
+    <div class="container">
+      <p class="section-label">Environment variables</p>
+
+      <table class="env-table">
+        <thead>
+          <tr>
+            <th>Variable</th>
+            <th>Required</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="param-name">MONGODB_URI</span></td>
+            <td><span class="required-pill">required</span></td>
+            <td><span class="param-default">—</span></td>
+            <td style="color:var(--muted)">MongoDB connection string</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">PORT</span></td>
+            <td><span class="optional-pill">optional</span></td>
+            <td><span class="param-default">3000</span></td>
+            <td style="color:var(--muted)">HTTP port</td>
+          </tr>
+          <tr>
+            <td><span class="param-name">NODE_ENV</span></td>
+            <td><span class="optional-pill">optional</span></td>
+            <td><span class="param-default">development</span></td>
+            <td style="color:var(--muted)">Runtime environment</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div class="container">
+    <div class="footer">
+      <span class="footer-mono">Pokédex API · NestJS + MongoDB</span>
+      <span class="footer-mono" style="color:#484F58">v0.0.1</span>
+    </div>
+  </div>
+
+</body>
+</html>
