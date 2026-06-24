@@ -19,7 +19,6 @@ import { JoiValidationSchema } from "./config/joi.validation";
 
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, "..", "public"),
-      exclude: ['/api/*path'],
     }),
 
     MongooseModule.forRoot(process.env.MONGODB_URI!),
